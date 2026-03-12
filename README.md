@@ -1,5 +1,14 @@
+<div align="center">
+
 # 🔬 Automated ODMR Image Analyzer
+
+![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/)
+![License: GPLv3](https://img.shields.io/badge/License-GPLv3-blue.svg)
+
 **Author:** Minhao Liu - PhD Researcher
+
+</div>
 
 An automated, statistically rigorous image processing pipeline designed to extract Optically Detected Magnetic Resonance (ODMR) signals from time-lapse fluorescence microscopy sequences of Fluorescent Nanodiamonds (FNDs).
 
