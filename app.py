@@ -9,7 +9,7 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-from analyzer import establish_baseline, extract_brightness, calculate_statistics
+from analyzer import establish_baseline, extract_brightness, apply_denoising, calculate_statistics
 from plotter import draw_preview_pane, draw_boxplot
 
 st.set_page_config(page_title="ODMR Image Analyzer", layout="wide")
@@ -47,6 +47,14 @@ else:
     neighborhood_size = None
     peak_threshold_percent = None
 
+st.sidebar.markdown("---")
+st.sidebar.header("🛠️ Signal Denoising")
+denoise_mode = st.sidebar.selectbox(
+    "Select Drift Correction Procedure:",
+    ["None (Raw Data)", "Polynomial Detrending (Slow Drift)", "Software Lock-In (Fast Cycle Filter)"],
+    help="Algorithms to mathematically flatten thermal drift and laser fluctuations."
+)
+
 # --- UI: FILE UPLOADERS ---
 col1, col2 = st.columns(2)
 with col1:
@@ -68,12 +76,16 @@ if on_files and off_files:
                 off_files[0], gaussian_sigma, threshold_multiplier, analysis_mode, peak_threshold_percent
             )
 
-            # 2. EXTRACT DATA USING LOCKED COORDINATES
-            on_data = extract_brightness(on_files, red_mask, bg_mask, analysis_mode, peaks_xy, neighborhood_size)
-            off_data = extract_brightness(off_files, red_mask, bg_mask, analysis_mode, peaks_xy, neighborhood_size)
+            # 2. EXTRACT RAW DATA USING LOCKED COORDINATES
+            raw_on_data = extract_brightness(on_files, red_mask, bg_mask, analysis_mode, peaks_xy, neighborhood_size)
+            raw_off_data = extract_brightness(off_files, red_mask, bg_mask, analysis_mode, peaks_xy, neighborhood_size)
             
-            # 3. STATISTICS
-            metrics = calculate_statistics(on_data, off_data)
+            # 3. APPLY ALGORITHMIC DENOISING
+            on_data, off_data = apply_denoising(raw_on_data, raw_off_data, denoise_mode)
+            
+            # 4. CALCULATE STATISTICS
+            is_paired_test = True if denoise_mode == "Software Lock-In (Fast Cycle Filter)" else False
+            metrics = calculate_statistics(on_data, off_data, is_paired=is_paired_test)
             
             st.success("Analysis Complete!")
             st.divider()
@@ -88,18 +100,22 @@ if on_files and off_files:
             # --- RESULTS DASHBOARD ---
             st.header("📊 Results")
             st.markdown(f"**Sample Sizes:** Microwave ON ($N={metrics['n_on']}$) | Microwave OFF ($N={metrics['n_off']}$)")
+            if denoise_mode != "None (Raw Data)":
+                st.info(f"**Active Filter:** {denoise_mode} applied. Data variance has been optimized to remove background drift.")
             
             metric_col1, metric_col2, metric_col3 = st.columns(3)
             metric_col1.metric("Mean ON Brightness", f"{metrics['mean_on']:.2f}", f"±{metrics['std_on']:.2f} SD")
             metric_col2.metric("Mean OFF Brightness", f"{metrics['mean_off']:.2f}", f"±{metrics['std_off']:.2f} SD")
             
             if metrics['p_value'] < 0.05:
-                metric_col3.metric("P-Value (Welch's T-Test)", f"{metrics['p_value']:.4e}", "Statistically Significant", delta_color="normal")
+                test_name = "Paired T-Test" if is_paired_test else "Welch's T-Test"
+                metric_col3.metric(f"P-Value ({test_name})", f"{metrics['p_value']:.4e}", "Statistically Significant", delta_color="normal")
             else:
-                metric_col3.metric("P-Value (Welch's T-Test)", f"{metrics['p_value']:.4f}", "Not Significant", delta_color="inverse")
+                test_name = "Paired T-Test" if is_paired_test else "Welch's T-Test"
+                metric_col3.metric(f"P-Value ({test_name})", f"{metrics['p_value']:.4f}", "Not Significant", delta_color="inverse")
 
             # --- DATA VISUALIZATION ---
-            fig_box = draw_boxplot(on_data, off_data, metrics['p_value'], analysis_mode, neighborhood_size, metrics)
+            fig_box = draw_boxplot(on_data, off_data, metrics['p_value'], analysis_mode, neighborhood_size, metrics, denoise_mode)
             st.pyplot(fig_box)
 
             # --- CSV EXPORT GENERATION ---
@@ -112,10 +128,11 @@ if on_files and off_files:
             
             csv_header = "provided by Minhao Liu\n\n"
             csv_header += f"--- Statistical Summary ({analysis_mode}) ---\n"
+            csv_header += f"Filter Applied: {denoise_mode}\n\n"
             csv_header += "Group,Sample Size (N),Mean,Standard Deviation\n"
             csv_header += f"Microwave ON,{metrics['n_on']},{metrics['mean_on']:.4f},{metrics['std_on']:.4f}\n"
             csv_header += f"Microwave OFF,{metrics['n_off']},{metrics['mean_off']:.4f},{metrics['std_off']:.4f}\n\n"
-            csv_header += f"Welch's T-Statistic,{metrics['t_stat']:.6f}\n"
+            csv_header += f"T-Statistic,{metrics['t_stat']:.6f}\n"
             csv_header += f"P-Value,{metrics['p_value']:.6e}\n\n"
             csv_header += "--- Raw Brightness Data ---\n"
             
