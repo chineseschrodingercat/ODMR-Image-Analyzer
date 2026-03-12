@@ -14,13 +14,13 @@ An automated, statistically rigorous image processing pipeline designed to extra
 
 ---
 
-## 📖 The Problem: Why not use ImageJ / "Max Pixel"?
+## 🔍 The Problem: Why not use ImageJ / "Max Pixel"?
 Traditional manual image analysis (such as finding the single highest pixel value in ImageJ) is fundamentally incompatible with the precision required for quantum sensing. 
 * **Extreme Value Vulnerability:** The single maximum pixel is often an artifact of camera shot noise, read noise, or hardware clipping (e.g., sensor saturation). 
 * **Spatial Bias:** Drawing manual ROI boxes leads to inconsistent background integration, artificially altering the calculated mean brightness.
 * **Thermal Drift:** Without automated target tracking, slight mechanical or thermal drifts in the microscope stage will cause the FNDs to move or blur, destroying the $1/f$ baseline over time.
 
-## 🚀 The Solution: This Automated Pipeline
+## 💡 The Solution: This Automated Pipeline
 This application mathematically eliminates human bias and camera artifacts through three key physical principles:
 
 ### 1. Spatial Coordinate Locking
@@ -59,7 +59,7 @@ Use the sidebar sliders to ensure the software is correctly tracking your FNDs:
 
 ---
 
-## 💻 Local Installation & Development
+## 🚀 Local Installation & Development
 
 This app is built using `streamlit`, `numpy`, `scipy`, `skimage`, and `matplotlib`. 
 
