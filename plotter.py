@@ -21,11 +21,10 @@ def draw_preview_pane(baseline_img, mask, peaks_xy, mode):
         
     ax2.axis('off')
     
-    # Authorship Watermark
     fig.text(0.98, 0.02, 'provided by Minhao Liu', ha='right', va='bottom', fontsize=9, color='gray', style='italic')
     return fig
 
-def draw_boxplot(on_data, off_data, p_value, mode, n_size, metrics):
+def draw_boxplot(on_data, off_data, p_value, mode, n_size, metrics, denoise_mode="None (Raw Data)"):
     """Draws a publication-ready boxplot with significance brackets."""
     fig, ax = plt.subplots(figsize=(6, 4))
     
@@ -37,10 +36,14 @@ def draw_boxplot(on_data, off_data, p_value, mode, n_size, metrics):
     else:
         ax.set_ylabel('Integrated Brightness')
         
-    ax.set_title('Fluorescence Comparison')
+    # Document active filtering in graph title
+    if denoise_mode != "None (Raw Data)":
+        ax.set_title(f'Fluorescence Comparison\n(Filter: {denoise_mode})', fontsize=11)
+    else:
+        ax.set_title('Fluorescence Comparison')
+        
     ax.grid(True, axis='y', linestyle='--', alpha=0.7)
     
-    # Statistical Significance Brackets
     if p_value <= 0.0001: sig_symbol = "****"
     elif p_value <= 0.001: sig_symbol = "***"
     elif p_value <= 0.01: sig_symbol = "**"
@@ -60,6 +63,5 @@ def draw_boxplot(on_data, off_data, p_value, mode, n_size, metrics):
     ax.text((x1+x2)*.5, bracket_y + bracket_height, sig_symbol, ha='center', va='bottom', color=font_color, fontsize=12, fontweight='bold')
     ax.set_ylim(bottom=ax.get_ylim()[0], top=bracket_y + (y_range * 0.15))
 
-    # Authorship Watermark
     fig.text(0.98, 0.02, 'provided by Minhao Liu', ha='right', va='bottom', fontsize=9, color='gray', style='italic')
     return fig
